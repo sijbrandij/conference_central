@@ -120,7 +120,7 @@ class Session(ndb.Model):
     speaker         = ndb.StringProperty()
     date            = ndb.DateProperty()
     duration        = ndb.IntegerProperty()
-    startTime       = ndb.IntegerProperty()
+    startTime       = ndb.TimeProperty()
     typeOfSession   = ndb.StringProperty()
 
 class SessionForm(messages.Message):
@@ -130,7 +130,7 @@ class SessionForm(messages.Message):
     speaker         = messages.StringField(4)
     date            = messages.StringField(5)
     duration        = messages.IntegerField(6)
-    startTime       = messages.IntegerField(7)
+    startTime       = messages.StringField(7)
     typeOfSession   = messages.StringField(8)
     conferenceName  = messages.StringField(9)
 
@@ -138,15 +138,15 @@ class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form message"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
 
-class SessionQueryForm(messages.Message):
-    """SessionQueryForm -- Session query inbound form message"""
+class SessionByTypeForm(messages.Message):
+    """SessionByTypeForm -- Session query inbound form message"""
     typeOfSession = messages.StringField(1)
     websafeConferenceKey = messages.StringField(2)
-    speaker = messages.StringField(3)
 
-class SessionQueryForms(messages.Message):
-    """SessionQueryForms -- multiple Session query inbound form message """
-    filters = messages.MessageField(SessionQueryForm, 1, repeated=True)
+class SessionBySpeakerForm(messages.Message):
+    """ SessionBySpeakerForm -- Session query by speaker inbound form message """
+    websafeConferenceKey = messages.StringField(1)
+    speaker = messages.StringField(2)
 
 class Wishlist(ndb.Model):
     """Wishlist -- Wishlist object"""

@@ -40,8 +40,8 @@ from models import TeeShirtSize
 from models import Session
 from models import SessionForm
 from models import SessionForms
-from models import SessionQueryForms
-from models import SessionQueryForm
+from models import SessionByTypeForm
+from models import SessionBySpeakerForm
 from models import Wishlist
 from models import WishlistForm
 
@@ -106,12 +106,12 @@ SESSION_POST_REQUEST = endpoints.ResourceContainer(
 )
 
 SESSION_TYPE_POST_REQUEST = endpoints.ResourceContainer(
-    SessionQueryForm,
+    SessionByTypeForm,
     websafeConferenceKey= messages.StringField(1)
 )
 
 SESSION_SPEAKER_POST_REQUEST = endpoints.ResourceContainer(
-    SessionQueryForm
+    SessionBySpeakerForm
 )
 
 MOST_POPULAR_SESSIONS_GET_REQUEST = endpoints.ResourceContainer(
@@ -174,8 +174,13 @@ class ConferenceApi(remote.Service):
         if not request.name:
             raise endpoints.BadRequestException("Conference 'name' field required")
 
+
         # copy ConferenceForm/ProtoRPC Message into dict
         data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+
+        # print 'DATE'
+        # print data['startDate']
+
         del data['websafeKey']
         del data['organizerDisplayName']
 
@@ -684,8 +689,8 @@ class ConferenceApi(remote.Service):
         sf = SessionForm()
         for field in sf.all_fields():
             if hasattr(session, field.name):
-                # convert Date to date string; just copy others
-                if field.name == 'date':
+                # convert date and startDate to date/time string; just copy others
+                if field.name == 'date' or field.name == 'startTime':
                     setattr(sf, field.name, str(getattr(session, field.name)))
                 else:
                     setattr(sf, field.name, getattr(session, field.name))
@@ -772,6 +777,10 @@ class ConferenceApi(remote.Service):
         # convert dates from strings to Date objects; set month based on start_date
         if data['date']:
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
+        if data['startTime']:
+            data['startTime'] = datetime.strptime(data['startTime'], "%H:%M").time()
+        print 'TIME'
+        print data['startTime']
 
         # generate Session Key based on user ID and Conference
         # ID based on Conference key get Session key from ID
@@ -820,12 +829,6 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(session, getattr(conference, 'name')) for session in sessions]
         )
-
-    # Query problem (task 3):
-    # The problem with the query to search for all non-workshop sessions before 7 pm is that Datastore does not allow for more than one inequality query in one query. The solution to this is to divide the query into multiple filters:
-    # query1 = Session.query()
-    # query2 = query1.filter(Session.typeOfSession != 'workshop') # filter for non-workshop sessions
-    # query3 = query2.filter(Session.startTime < 1900) # filter for sessions starting before 7pm
 
 # - - - Wishlists - - - - - - - - - - - - - - - - - - - -
 
@@ -912,7 +915,8 @@ class ConferenceApi(remote.Service):
         wishlist = Wishlist.query(Wishlist.userId == user_id).get()
 
         # remove the sessionKey from the array of sessionKeys
-        wishlist.sessionKey.remove(request.websafeSessionKey)
+        if websafeSessionKey in wishlist.sessionKey:
+            wishlist.sessionKey.remove(request.websafeSessionKey)
 
         wishlist.put()
 

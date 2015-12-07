@@ -30,3 +30,19 @@ App Engine application for the Udacity training course.
 [4]: https://console.developers.google.com/
 [5]: https://localhost:8080/
 [6]: https://developers.google.com/appengine/docs/python/endpoints/endpoints_tool
+
+## Design Explanations
+1. Task 1: Sessions - sessions are a data model with a link to the conference they are a part of. For speaker, I chose not to create a full-blown model because the current featureset does not require the speaker to be a data-model. I like to keep things like data structure etc. simple if that's possible. When the app would require more functionality for speakers, for instance speaker management by the conference organization, then I would turn speaker into a data model.
+1. Task 2: Wishlists - chose to create sessions as a table with the userId and one or multiple sessionIds. This way, it is easy to find a user's wishlist and the sessions they wishlisted. I believe this is an efficient way of storing this data.
+1. Indexes and queries - one query I thought of is the getWishlistBySession query: find the users who wishlisted a particular session. The organizer can use this query to drive more users to their conferences. The other query I came up with is mostPopular: a query to determine which session is most popular among users. My comments about the query problem are below.
+1. Tasks - implemented using the Task Queue, Memcache key is MEMCACHE_SPEAKERS_KEY
+
+## Query problem (task 3)
+The problem with the query to search for all non-workshop sessions before 7 pm is that Datastore does not allow for more than one inequality query in one query. In this case, there are two inequality queries:
+1. TypeOfSession != 'workshop'
+1. startTime < 19:00:00
+
+The solution to this is to divide the query into multiple filters:
+1. query1 = Session.query()
+1. query2 = query1.filter(Session.typeOfSession != 'workshop') # filter for non-workshop sessions
+1. query3 = query2.filter(Session.startTime < 1900) # filter for sessions starting before 7pm
