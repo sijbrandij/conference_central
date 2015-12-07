@@ -42,7 +42,7 @@ The problem with the query to search for all non-workshop sessions before 7 pm i
 1. TypeOfSession != 'workshop'
 1. startTime < 19:00:00
 
-The solution to this is to divide the query into multiple filters:
-1. query1 = Session.query()
-1. query2 = query1.filter(Session.typeOfSession != 'workshop') # filter for non-workshop sessions
-1. query3 = query2.filter(Session.startTime < 1900) # filter for sessions starting before 7pm
+The solution to this is to change the queries to a query with only one inequality. Based on the data I changed the query into:
+1. query1 = Session.query(ancestor=conference.key)
+1. query2 = query1.filter(Session.typeOfSession.IN(['lecture', 'keynote'])) # filter for non-workshop sessions
+1. query3 = query2.filter(Session.startTime < time) # filter for sessions starting before a time object
