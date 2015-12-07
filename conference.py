@@ -118,6 +118,10 @@ MOST_POPULAR_SESSIONS_GET_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey = messages.StringField(1)
 )
 
+SESSION_TASK_3_POST_REQUEST = endpoints.ResourceContainer(
+    websafeConferenceKey = messages.StringField(1)
+)
+
 WISHLIST_POST_REQUEST = endpoints.ResourceContainer(
     websafeSessionKey= messages.StringField(1)
 )
@@ -749,6 +753,24 @@ class ConferenceApi(remote.Service):
 
         return SessionForms(
             items=[self._copySessionToForm(session, getattr(session.key.parent().get(), 'name')) for session in sessions])
+
+    @endpoints.method(
+        SESSION_TASK_3_POST_REQUEST,
+        SessionForms,
+        path='conference/{websafeConferenceKey}/sessions/task_3',
+        http_method='POST',
+        name='getSessionsForTaskThree'
+    )
+    def getSessionsForTaskThree(self, request):
+        conference = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        time = datetime.strptime("19:00", "%H:%M").time()
+        query = Session.query(ancestor = conference.key)
+        query = query.filter(Session.typeOfSession.IN(['lecture', 'keynote']))
+        query = query.filter(Session.startTime < time)
+
+        return SessionForms(
+            items=[self._copySessionToForm(session, getattr(conference, 'name')) for session in query])
+
 
     @endpoints.method(
         SESSION_POST_REQUEST,

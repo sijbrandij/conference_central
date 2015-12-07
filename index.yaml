@@ -107,6 +107,12 @@ indexes:
 - kind: Session
   ancestor: yes
   properties:
+  - name: typeOfSession
+  - name: startTime
+
+- kind: Session
+  ancestor: yes
+  properties:
   - name: wishlistCount
     direction: desc
 
