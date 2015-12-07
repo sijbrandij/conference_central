@@ -122,6 +122,7 @@ class Session(ndb.Model):
     duration        = ndb.IntegerProperty()
     startTime       = ndb.TimeProperty()
     typeOfSession   = ndb.StringProperty()
+    wishlistCount   = ndb.IntegerProperty()
 
 class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
@@ -133,6 +134,7 @@ class SessionForm(messages.Message):
     startTime       = messages.StringField(7)
     typeOfSession   = messages.StringField(8)
     conferenceName  = messages.StringField(9)
+    wishlistCount   = messages.IntegerField(10)
 
 class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form message"""

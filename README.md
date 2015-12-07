@@ -34,7 +34,7 @@ App Engine application for the Udacity training course.
 ## Design Explanations
 1. Task 1: Sessions - sessions are a data model with a link to the conference they are a part of. For speaker, I chose not to create a full-blown model because the current featureset does not require the speaker to be a data-model. I like to keep things like data structure etc. simple if that's possible. When the app would require more functionality for speakers, for instance speaker management by the conference organization, then I would turn speaker into a data model.
 1. Task 2: Wishlists - chose to create sessions as a table with the userId and one or multiple sessionIds. This way, it is easy to find a user's wishlist and the sessions they wishlisted. I believe this is an efficient way of storing this data.
-1. Indexes and queries - one query I thought of is the getWishlistBySession query: find the users who wishlisted a particular session. The organizer can use this query to drive more users to their conferences. The other query I came up with is mostPopular: a query to determine which session is most popular among users. My comments about the query problem are below.
+1. Indexes and queries - one query I thought of is the getWishlistBySession query: find the users who wishlisted a particular session. The organizer can use this query to drive more users to their conferences. The other query I came up with is mostPopular: a query to determine which session is most popular among users. I added indexes for the Session queries BySpeaker and ByType, and I added an index for Wishlist, both for userId and sessionKey. My comments about the query problem are below.
 1. Tasks - implemented using the Task Queue, Memcache key is MEMCACHE_SPEAKERS_KEY
 
 ## Query problem (task 3)

@@ -104,6 +104,12 @@ indexes:
   - name: typeOfSession
   - name: conferenceId
 
+- kind: Session
+  ancestor: yes
+  properties:
+  - name: wishlistCount
+    direction: desc
+
 - kind: Wishlist
   properties:
   - name: sessionKey

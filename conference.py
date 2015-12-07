@@ -796,7 +796,8 @@ class ConferenceApi(remote.Service):
             date = data['date'],
             duration = data['duration'],
             startTime = data['startTime'],
-            typeOfSession = data['typeOfSession']
+            typeOfSession = data['typeOfSession'],
+            wishlistCount = 0
         )
 
         # # create Session
@@ -814,17 +815,14 @@ class ConferenceApi(remote.Service):
     @endpoints.method(
         MOST_POPULAR_SESSIONS_GET_REQUEST,
         SessionForms,
-        path='/conferences/{websafeConferenceKey}/sessions/wishlisted',
+        path='/conferences/{websafeConferenceKey}/sessions/mostPopular',
         http_method='GET',
-        name='wishlistedSessions'
+        name='mostPopular'
     )
-    def wishlistedSessions(self, request):
-        """ Given a conference, list the sessions in the order of their popularity """
+    def mostPopular(self, request):
+        """ Given a conference, return sessions in the order of the times a session was wishlisted """
         conference = ndb.Key(urlsafe= request.websafeConferenceKey).get()
-        sessions = Session.query(ancestor=conference.key).fetch()
-        websafeKeys = [session.key.urlsafe() for session in sessions]
-        wishlists = Wishlist.query(Wishlist.sessionKey.IN(websafeKeys)).fetch()
-        # TODO order by the number of times a session has been wishlisted
+        sessions = Session.query(ancestor=conference.key).order(-Session.wishlistCount)
 
         return SessionForms(
             items=[self._copySessionToForm(session, getattr(conference, 'name')) for session in sessions]
@@ -853,23 +851,26 @@ class ConferenceApi(remote.Service):
         # get current user
         user = endpoints.get_current_user()
         user_id = getUserId(user)
+        p_key = ndb.Key(Profile, user_id)
 
         session = ndb.Key(urlsafe=request.websafeSessionKey).get()
         conference_key = session.key.parent()
         conference = conference_key.get()
 
         # first try to find wishlist of the current user
-        wishlist = Wishlist.query(Wishlist.userId==user_id).get()
+        wishlist = Wishlist.query(ancestor=p_key).get()
         if not wishlist:
             # create a wishlist if nothing was found
-            wishlist = Wishlist(userId=user_id)
-            p_key = ndb.Key(Profile, user_id)
+            wishlist = Wishlist(userId = user_id)
             w_id = Wishlist.allocate_ids(size=1, parent=p_key)[0]
             w_key = ndb.Key(Wishlist, w_id, parent=p_key)
 
         wishlist.sessionKey.append(session.key.urlsafe())
 
         wishlist.put()
+        session.wishlistCount += 1
+
+        session.put()
 
         return self._copyWishlistToForm(wishlist)
 
@@ -905,6 +906,7 @@ class ConferenceApi(remote.Service):
         http_method='POST',
         name='deleteSessionInWishlist'
     )
+
     def deleteSessionInWishlist(self, request):
         """ removes the session from the user's list of sessions they are interested in attending"""
         # get current user
@@ -914,11 +916,16 @@ class ConferenceApi(remote.Service):
         # get current user's wishlist
         wishlist = Wishlist.query(Wishlist.userId == user_id).get()
 
-        # remove the sessionKey from the array of sessionKeys
-        if websafeSessionKey in wishlist.sessionKey:
-            wishlist.sessionKey.remove(request.websafeSessionKey)
+        # get the session
+        session = ndb.Key(urlsafe=request.websafeSessionKey).get()
 
-        wishlist.put()
+        # remove the sessionKey from the array of sessionKeys
+        if request.websafeSessionKey in wishlist.sessionKey:
+            wishlist.sessionKey.remove(request.websafeSessionKey)
+            session.wishlistCount -= 1
+
+            wishlist.put()
+            session.put()
 
         return self._copyWishlistToForm(wishlist)
 
