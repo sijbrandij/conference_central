@@ -817,12 +817,13 @@ class ConferenceApi(remote.Service):
         session.put()
 
         # Set featured speaker
-        taskqueue.add(
-            params={
-                'sessionKey': session.key.urlsafe(),
-                'conferenceKey': conf.key.urlsafe()
-            }, url='/tasks/set_featured_speaker'
-        )
+        if session.speaker:
+            taskqueue.add(
+                params={
+                    'sessionKey': session.key.urlsafe(),
+                    'conferenceKey': conf.key.urlsafe()
+                }, url='/tasks/set_featured_speaker'
+            )
 
         return self._copySessionToForm(session, getattr(conf, 'name'))
 
