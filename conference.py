@@ -756,6 +756,7 @@ class ConferenceApi(remote.Service):
         name='getSessionsForTaskThree'
     )
     def getSessionsForTaskThree(self, request):
+        """ Query as specified by the project assignment: find all sessions that are not workshops and that start before 19:00 """
         conference = ndb.Key(urlsafe=request.websafeConferenceKey).get()
         time = datetime.strptime("19:00", "%H:%M").time()
         query = Session.query(ancestor = conference.key)
