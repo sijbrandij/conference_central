@@ -182,9 +182,6 @@ class ConferenceApi(remote.Service):
         # copy ConferenceForm/ProtoRPC Message into dict
         data = {field.name: getattr(request, field.name) for field in request.all_fields()}
 
-        # print 'DATE'
-        # print data['startDate']
-
         del data['websafeKey']
         del data['organizerDisplayName']
 
@@ -538,7 +535,8 @@ class ConferenceApi(remote.Service):
         """ Create features speaker & assign to memcache; used by Taskqueue """
         session = ndb.Key(urlsafe=sessionKey).get()
         speaker = session.speaker
-        sessions = Session.query(ancestor=conferenceKey).filter(Session.speaker == speaker).fetch()
+        conference = ndb.Key(urlsafe=conferenceKey).get()
+        sessions = Session.query(ancestor=conference.key).filter(Session.speaker == speaker)
         if sessions.count > 1:
             announcement = SPEAKER_TPL % ((speaker), (
                             ', '.join(session.name for session in sessions)))
@@ -721,7 +719,7 @@ class ConferenceApi(remote.Service):
     @endpoints.method(
         SESSION_TYPE_GET_REQUEST,
         SessionForms,
-        path='conference/{websafeConferenceKey}/sessions',
+        path='conference/{websafeConferenceKey}/sessions/byType',
         http_method='GET',
         name='getConferenceSessionsByType'
     )
@@ -782,10 +780,11 @@ class ConferenceApi(remote.Service):
             raise endpoints.NotFoundException(
                 'No conference found with key: %s' % request.websafeConferenceKey)
         user = endpoints.get_current_user()
+        user_id = getUserId(user)
         prof = conf.key.parent().get()
 
-        # if user != prof.displayName:
-        #     raise endpoints.UnauthorizedException("You cannot create sessions for this conference.")
+        if conf.organizerUserId != user_id:
+            raise endpoints.UnauthorizedException("You cannot create sessions for this conference.")
 
         # copy SessionForm/ProtoRPC Message into dict
         data = {field.name: getattr(request, field.name) for field in request.all_fields()}
@@ -796,8 +795,6 @@ class ConferenceApi(remote.Service):
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
         if data['startTime']:
             data['startTime'] = datetime.strptime(data['startTime'], "%H:%M").time()
-        print 'TIME'
-        print data['startTime']
 
         # generate Session Key based on user ID and Conference
         # ID based on Conference key get Session key from ID
@@ -821,8 +818,10 @@ class ConferenceApi(remote.Service):
 
         # Set featured speaker
         taskqueue.add(
-            params={ 'sessionKey': session.key.urlsafe(), 'conferenceKey': session.key.parent().key },
-            url='/tasks/set_featured_speaker'
+            params={
+                'sessionKey': session.key.urlsafe(),
+                'conferenceKey': conf.key.urlsafe()
+            }, url='/tasks/set_featured_speaker'
         )
 
         return self._copySessionToForm(session, getattr(conf, 'name'))
