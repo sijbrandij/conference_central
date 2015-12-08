@@ -721,9 +721,9 @@ class ConferenceApi(remote.Service):
         SessionForms,
         path='conference/{websafeConferenceKey}/sessions/byType',
         http_method='GET',
-        name='getConferenceSessionsByType'
+        name='getSessionsByType'
     )
-    def getConferenceSessionsByType(self, request):
+    def getSessionsByType(self, request):
         """ Given a conference, return all sessions of a specified type (eg lecture, keynote, workshop) """
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
 
