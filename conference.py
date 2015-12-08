@@ -735,7 +735,7 @@ class ConferenceApi(remote.Service):
         """ Given a conference, return all sessions of a specified type (eg lecture, keynote, workshop) """
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
 
-        sessions = Session.query().filter(Session.conferenceId == conf.key.id()).filter(Session.typeOfSession == request.typeOfSession)
+        sessions = Session.query(ancestor=conf.key).filter(Session.typeOfSession == request.typeOfSession)
 
         return SessionForms(
             items=[self._copySessionToForm(session, getattr(conf, 'name')) for session in sessions])
@@ -812,7 +812,6 @@ class ConferenceApi(remote.Service):
         session = Session(
             key = s_key,
             name = data['name'],
-            conferenceId = conf_id,
             highlights = data['highlights'],
             speaker = data['speaker'],
             date = data['date'],
@@ -887,7 +886,7 @@ class ConferenceApi(remote.Service):
             w_id = Wishlist.allocate_ids(size=1, parent=p_key)[0]
             w_key = ndb.Key(Wishlist, w_id, parent=p_key)
 
-        wishlist.sessionKey.append(session.key.urlsafe())
+        wishlist.sessionKey.append(session.key)
 
         wishlist.put()
         session.wishlistCount += 1
@@ -912,12 +911,15 @@ class ConferenceApi(remote.Service):
         # get current user's wishlist
         wishlist = Wishlist.query(Wishlist.userId == user_id).get()
 
-        # get session keys from current user's wishlist
-        sessionKeys = wishlist.sessionKey
+        if wishlist:
 
-        # lookup sessions
-        sessions = [(ndb.Key(urlsafe=sessionKey).get()) for sessionKey in sessionKeys]
+            # get session keys from current user's wishlist
+            sessionKeys = wishlist.sessionKey
 
+            # lookup sessions
+            sessions = ndb.get_multi(sessionKeys)
+        else:
+            sessions = []
         return SessionForms(
             items=[self._copySessionToForm(session, getattr(session.key.parent().get(), 'name')) for session in sessions])
 

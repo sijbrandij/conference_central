@@ -115,7 +115,6 @@ class ConferenceQueryForms(messages.Message):
 class Session(ndb.Model):
     """Session -- Session object"""
     name            = ndb.StringProperty(required=True)
-    conferenceId    = ndb.IntegerProperty(required=True)
     highlights      = ndb.StringProperty(repeated=True)
     speaker         = ndb.StringProperty()
     date            = ndb.DateProperty()
@@ -135,6 +134,7 @@ class SessionForm(messages.Message):
     typeOfSession   = messages.StringField(8)
     conferenceName  = messages.StringField(9)
     wishlistCount   = messages.IntegerField(10)
+    websafeKey      = messages.StringField(11)
 
 class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form message"""
@@ -153,7 +153,7 @@ class SessionBySpeakerForm(messages.Message):
 class Wishlist(ndb.Model):
     """Wishlist -- Wishlist object"""
     userId          = ndb.StringProperty(required=True)
-    sessionKey       = ndb.StringProperty(repeated=True)
+    sessionKey       = ndb.KeyProperty(repeated=True)
 
 class WishlistForm(messages.Message):
     """WishlistForm -- Wishlist outbound form message"""
