@@ -708,6 +708,7 @@ class ConferenceApi(remote.Service):
     def getConferenceSessions(self, request):
         """ Given a conference, return all sessions """
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        # TODO surround this method with a try/except block because the first line will throw an exception if the key is corrupt or doesn't exist
         if not conf:
             raise endpoints.NotFoundException(
                 'No conference found with key: %s' % request.websafeConferenceKey)
@@ -795,6 +796,9 @@ class ConferenceApi(remote.Service):
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
         if data['startTime']:
             data['startTime'] = datetime.strptime(data['startTime'], "%H:%M").time()
+        if data['typeOfSession'] and data['typeOfSession'] not in ['lecture', 'keynote', 'workshop']:
+                data['typeOfSession'] = 'workshop'
+
 
         # generate Session Key based on user ID and Conference
         # ID based on Conference key get Session key from ID
