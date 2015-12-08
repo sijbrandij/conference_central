@@ -534,12 +534,11 @@ class ConferenceApi(remote.Service):
 # - - - Featured speaker - - - - - - - - - - - - - - - - - - - -
 
     @staticmethod
-    def _cacheFeaturedSpeaker(sessionKey):
+    def _cacheFeaturedSpeaker(sessionKey, conferenceKey):
         """ Create features speaker & assign to memcache; used by Taskqueue """
         session = ndb.Key(urlsafe=sessionKey).get()
         speaker = session.speaker
-        conference = session.key.parent().get()
-        sessions = Session.query(ancestor = conference.key).filter(Session.speaker == speaker).fetch()
+        sessions = Session.query(ancestor = conferenceKey).filter(Session.speaker == speaker).fetch()
         if sessions.count > 1:
             announcement = SPEAKER_TPL % ((speaker), (
                             ', '.join(session.name for session in sessions)))
@@ -820,10 +819,9 @@ class ConferenceApi(remote.Service):
         # # create Session
         session.put()
 
-        # self._cacheFeaturedSpeaker(session.key.urlsafe())
         # Set featured speaker
         taskqueue.add(
-            params={ 'sessionKey': session.key.urlsafe() },
+            params={ 'sessionKey': session.key.urlsafe(), 'conferenceKey': session.key.parent().key },
             url='/tasks/set_featured_speaker'
         )
 
