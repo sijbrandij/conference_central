@@ -110,7 +110,7 @@ SESSION_TYPE_GET_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey= messages.StringField(1)
 )
 
-SESSION_SPEAKER_POST_REQUEST = endpoints.ResourceContainer(
+SESSION_SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
     SessionBySpeakerForm
 )
 
@@ -118,7 +118,7 @@ MOST_POPULAR_SESSIONS_GET_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey = messages.StringField(1)
 )
 
-SESSION_TASK_3_POST_REQUEST = endpoints.ResourceContainer(
+SESSION_TASK_3_GET_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey = messages.StringField(1)
 )
 
@@ -130,7 +130,7 @@ WISHLIST_DELETE_REQUEST = endpoints.ResourceContainer(
     websafeSessionKey = messages.StringField(1)
 )
 
-WISHLIST_BY_SESSION_POST_REQUEST = endpoints.ResourceContainer(
+WISHLIST_BY_SESSION_GET_REQUEST = endpoints.ResourceContainer(
     websafeSessionKey = messages.StringField(1)
 )
 
@@ -437,10 +437,10 @@ class ConferenceApi(remote.Service):
         # create new Profile if not there
         if not profile:
             profile = Profile(
-                key = p_key,
-                displayName = user.nickname(),
-                mainEmail= user.email(),
-                teeShirtSize = str(TeeShirtSize.NOT_SPECIFIED),
+                key=p_key,
+                displayName=user.nickname(),
+                mainEmail=user.email(),
+                teeShirtSize=str(TeeShirtSize.NOT_SPECIFIED),
             )
             profile.put()
 
@@ -538,7 +538,7 @@ class ConferenceApi(remote.Service):
         """ Create features speaker & assign to memcache; used by Taskqueue """
         session = ndb.Key(urlsafe=sessionKey).get()
         speaker = session.speaker
-        sessions = Session.query(ancestor = conferenceKey).filter(Session.speaker == speaker).fetch()
+        sessions = Session.query(ancestor=conferenceKey).filter(Session.speaker == speaker).fetch()
         if sessions.count > 1:
             announcement = SPEAKER_TPL % ((speaker), (
                             ', '.join(session.name for session in sessions)))
@@ -735,10 +735,10 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(session, getattr(conf, 'name')) for session in sessions])
 
     @endpoints.method(
-        SESSION_SPEAKER_POST_REQUEST,
+        SESSION_SPEAKER_GET_REQUEST,
         SessionForms,
         path='sessions/speaker',
-        http_method='POST',
+        http_method='GET',
         name='getSessionsBySpeaker'
     )
     def getSessionsBySpeaker(self, request):
@@ -749,19 +749,19 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(session, getattr(session.key.parent().get(), 'name')) for session in sessions])
 
     @endpoints.method(
-        SESSION_TASK_3_POST_REQUEST,
+        SESSION_TASK_3_GET_REQUEST,
         SessionForms,
         path='conference/{websafeConferenceKey}/sessions/task_3',
-        http_method='POST',
+        http_method='GET',
         name='getSessionsForTaskThree'
     )
     def getSessionsForTaskThree(self, request):
         """ Query as specified by the project assignment: find all sessions that are not workshops and that start before 19:00 """
         conference = ndb.Key(urlsafe=request.websafeConferenceKey).get()
         time = datetime.strptime("19:00", "%H:%M").time()
-        query = Session.query(ancestor = conference.key)
+        query = Session.query(ancestor=conference.key)
         query = query.filter(Session.typeOfSession.IN(['lecture', 'keynote']))
-        query = query.filter(Session.startTime < time)
+        query = query.filter(Session.startTime<time)
 
         return SessionForms(
             items=[self._copySessionToForm(session, getattr(conference, 'name')) for session in query])
@@ -805,15 +805,15 @@ class ConferenceApi(remote.Service):
         s_key = ndb.Key(Session, s_id, parent=conf.key)
 
         session = Session(
-            key = s_key,
-            name = data['name'],
-            highlights = data['highlights'],
-            speaker = data['speaker'],
-            date = data['date'],
-            duration = data['duration'],
-            startTime = data['startTime'],
-            typeOfSession = data['typeOfSession'],
-            wishlistCount = 0
+            key=s_key,
+            name=data['name'],
+            highlights=data['highlights'],
+            speaker=data['speaker'],
+            date=data['date'],
+            duration=data['duration'],
+            startTime=data['startTime'],
+            typeOfSession=data['typeOfSession'],
+            wishlistCount=0
         )
 
         # # create Session
@@ -836,7 +836,7 @@ class ConferenceApi(remote.Service):
     )
     def mostPopular(self, request):
         """ Given a conference, return sessions in the order of the times a session was wishlisted """
-        conference = ndb.Key(urlsafe= request.websafeConferenceKey).get()
+        conference = ndb.Key(urlsafe=request.websafeConferenceKey).get()
         sessions = Session.query(ancestor=conference.key).order(-Session.wishlistCount)
 
         return SessionForms(
@@ -921,7 +921,7 @@ class ConferenceApi(remote.Service):
         WISHLIST_DELETE_REQUEST,
         WishlistForm,
         path='profile/wishlist/delete_session/{websafeSessionKey}',
-        http_method='POST',
+        http_method='DELETE',
         name='deleteSessionInWishlist'
     )
 
@@ -948,10 +948,10 @@ class ConferenceApi(remote.Service):
         return self._copyWishlistToForm(wishlist)
 
     @endpoints.method(
-        WISHLIST_BY_SESSION_POST_REQUEST,
+        WISHLIST_BY_SESSION_GET_REQUEST,
         ProfileForms,
         path='/sessions/{websafeSessionKey}/getWishlists',
-        http_method='POST',
+        http_method='GET',
         name='getWishlistBySession'
     )
     def getWishlistBySession(self, request):
