@@ -868,9 +868,8 @@ class ConferenceApi(remote.Service):
         user_id = getUserId(user)
         p_key = ndb.Key(Profile, user_id)
 
+        # get the session to be wishlisted
         session = ndb.Key(urlsafe=request.websafeSessionKey).get()
-        conference_key = session.key.parent()
-        conference = conference_key.get()
 
         # first try to find wishlist of the current user
         wishlist = Wishlist.query(ancestor=p_key).get()
@@ -880,11 +879,12 @@ class ConferenceApi(remote.Service):
             w_id = Wishlist.allocate_ids(size=1, parent=p_key)[0]
             w_key = ndb.Key(Wishlist, w_id, parent=p_key)
 
+        # Add session key to wishlist
         wishlist.sessionKey.append(session.key)
-
         wishlist.put()
-        session.wishlistCount += 1
 
+        # Update the session wishlist counter
+        session.wishlistCount += 1
         session.put()
 
         return self._copyWishlistToForm(wishlist)
