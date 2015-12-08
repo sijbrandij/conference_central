@@ -544,10 +544,6 @@ class ConferenceApi(remote.Service):
             announcement = SPEAKER_TPL % ((speaker), (
                             ', '.join(session.name for session in sessions)))
             memcache.set(MEMCACHE_SPEAKERS_KEY, announcement)
-        else:
-            announcement = ""
-            memcache.delete(MEMCACHE_SPEAKERS_KEY)
-        return announcement
 
     @endpoints.method(
         message_types.VoidMessage,
