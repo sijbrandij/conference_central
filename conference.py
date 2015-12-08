@@ -535,7 +535,7 @@ class ConferenceApi(remote.Service):
 
     @staticmethod
     def _cacheFeaturedSpeaker(sessionKey):
-        """ Create features speaker & assign to memcache; used by memcache cron job """
+        """ Create features speaker & assign to memcache; used by Taskqueue """
         session = ndb.Key(urlsafe=sessionKey).get()
         speaker = session.speaker
         conference = session.key.parent().get()
