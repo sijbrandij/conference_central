@@ -105,7 +105,7 @@ SESSION_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
 )
 
-SESSION_TYPE_POST_REQUEST = endpoints.ResourceContainer(
+SESSION_TYPE_GET_REQUEST = endpoints.ResourceContainer(
     SessionByTypeForm,
     websafeConferenceKey= messages.StringField(1)
 )
@@ -713,17 +713,16 @@ class ConferenceApi(remote.Service):
         if not conf:
             raise endpoints.NotFoundException(
                 'No conference found with key: %s' % request.websafeConferenceKey)
-        sessions_query = Session.query(ancestor=ndb.Key(urlsafe=request.websafeConferenceKey))
-        sessions = sessions_query.fetch()
+        sessions = Session.query(ancestor=ndb.Key(urlsafe=request.websafeConferenceKey))
         return SessionForms(
             items=[self._copySessionToForm(session, getattr(conf, 'name')) for session in sessions]
         )
 
     @endpoints.method(
-        SESSION_TYPE_POST_REQUEST,
+        SESSION_TYPE_GET_REQUEST,
         SessionForms,
         path='conference/{websafeConferenceKey}/sessions',
-        http_method='POST',
+        http_method='GET',
         name='getConferenceSessionsByType'
     )
     def getConferenceSessionsByType(self, request):
