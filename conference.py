@@ -862,7 +862,7 @@ class ConferenceApi(remote.Service):
         name='addSessionToWishlist'
     )
     def addSessionToWishlist(self, request):
-        """ Given a speaker, return all sessions given by this particular speaker, across all conferences """
+        """ Add a session to the current user's Wishlist """
         # get current user
         user = endpoints.get_current_user()
         user_id = getUserId(user)
@@ -926,7 +926,7 @@ class ConferenceApi(remote.Service):
     )
 
     def deleteSessionInWishlist(self, request):
-        """ removes the session from the user's list of sessions they are interested in attending"""
+        """ removes the session from the current user's wishlist """
         # get current user
         user = endpoints.get_current_user()
         user_id = getUserId(user)
