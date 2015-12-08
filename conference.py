@@ -897,7 +897,7 @@ class ConferenceApi(remote.Service):
         name='getSessionsInWishlist'
     )
     def getSessionsInWishlist(self, request):
-        """query for all the sessions in a conference that the user is interested in"""
+        """ Get all the sessions the current user has wishlisted """
         # get current user
         user = endpoints.get_current_user()
         user_id = getUserId(user)
