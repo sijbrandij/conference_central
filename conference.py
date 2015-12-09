@@ -23,6 +23,7 @@ from protorpc import remote
 from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
+from google.net.proto.ProtocolBuffer import ProtocolBufferDecodeError
 
 from models import ConflictException
 from models import Profile
@@ -295,8 +296,9 @@ class ConferenceApi(remote.Service):
     def getConference(self, request):
         """Return requested conference (by websafeConferenceKey)."""
         # get Conference object from request; bail if not found
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-        if not conf:
+        try:
+            conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        except ProtocolBufferDecodeError:
             raise endpoints.NotFoundException(
                 'No conference found with key: %s' % request.websafeConferenceKey)
         prof = conf.key.parent().get()
@@ -313,9 +315,10 @@ class ConferenceApi(remote.Service):
     )
     def getConferencesCreated(self, request):
         """Return conferences created by user."""
-        # make sure user is authed
-        user = endpoints.get_current_user()
-        if not user:
+        try:
+            # make sure user is authed
+            user = endpoints.get_current_user()
+        except ProtocolBufferDecodeError:
             raise endpoints.UnauthorizedException('Authorization required')
         user_id = getUserId(user)
 
@@ -422,9 +425,10 @@ class ConferenceApi(remote.Service):
 
     def _getProfileFromUser(self):
         """Return user Profile from datastore, creating new one if non-existent."""
-        # make sure user is authed
-        user = endpoints.get_current_user()
-        if not user:
+        try:
+            # make sure user is authed
+           user = endpoints.get_current_user()
+        except ProtocolBufferDecodeError:
             raise endpoints.UnauthorizedException('Authorization required')
 
         # get Profile from datastore
@@ -707,9 +711,9 @@ class ConferenceApi(remote.Service):
     )
     def getConferenceSessions(self, request):
         """ Given a conference, return all sessions """
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-        # TODO surround this method with a try/except block because the first line will throw an exception if the key is corrupt or doesn't exist
-        if not conf:
+        try:
+            conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        except ProtocolBufferDecodeError:
             raise endpoints.NotFoundException(
                 'No conference found with key: %s' % request.websafeConferenceKey)
         sessions = Session.query(ancestor=ndb.Key(urlsafe=request.websafeConferenceKey))
@@ -726,8 +730,11 @@ class ConferenceApi(remote.Service):
     )
     def getSessionsByType(self, request):
         """ Given a conference, return all sessions of a specified type (eg lecture, keynote, workshop) """
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-
+        try:
+            conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        except ProtocolBufferDecodeError:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
         sessions = Session.query(ancestor=conf.key).filter(Session.typeOfSession == request.typeOfSession)
 
         return SessionForms(
@@ -756,7 +763,11 @@ class ConferenceApi(remote.Service):
     )
     def getSessionsForTaskThree(self, request):
         """ Query as specified by the project assignment: find all sessions that are not workshops and that start before 19:00 """
-        conference = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        try:
+            conference = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        except ProtocolBufferDecodeError:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
         time = datetime.strptime("19:00", "%H:%M").time()
         query = Session.query(ancestor=conference.key)
         query = query.filter(Session.typeOfSession.IN(['lecture', 'keynote']))
@@ -775,7 +786,11 @@ class ConferenceApi(remote.Service):
     )
     def createSession(self, request):
         """Create new session."""
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        try:
+            conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        except ProtocolBufferDecodeError:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
         conf_id = conf.key.id()
         if not conf:
             raise endpoints.NotFoundException(
@@ -840,7 +855,11 @@ class ConferenceApi(remote.Service):
     )
     def mostPopular(self, request):
         """ Given a conference, return sessions in the order of the times a session was wishlisted """
-        conference = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        try:
+            conference = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        except ProtocolBufferDecodeError:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
         sessions = Session.query(ancestor=conference.key).order(-Session.wishlistCount)
 
         return SessionForms(
@@ -872,9 +891,12 @@ class ConferenceApi(remote.Service):
         user_id = getUserId(user)
         p_key = ndb.Key(Profile, user_id)
 
-        # get the session to be wishlisted
-        session = ndb.Key(urlsafe=request.websafeSessionKey).get()
-
+        try:
+            # get the session to be wishlisted
+            session = ndb.Key(urlsafe=request.websafeSessionKey).get()
+        except ProtocolBufferDecodeError:
+            raise endpoints.NotFoundException(
+                'No session found with key: %s' % request.websafeSessionKey)
         # first try to find wishlist of the current user
         wishlist = Wishlist.query(ancestor=p_key).get()
         if not wishlist:
@@ -938,9 +960,12 @@ class ConferenceApi(remote.Service):
         # get current user's wishlist
         wishlist = Wishlist.query(Wishlist.userId == user_id).get()
 
-        # get the session
-        session = ndb.Key(urlsafe=request.websafeSessionKey).get()
-
+        try:
+            # get the session
+            session = ndb.Key(urlsafe=request.websafeSessionKey).get()
+        except ProtocolBufferDecodeError:
+            raise endpoints.NotFoundException(
+                'No session found with key: %s' % request.websafeSessionKey)
         # remove the sessionKey from the array of sessionKeys
         if request.websafeSessionKey in wishlist.sessionKey:
             wishlist.sessionKey.remove(request.websafeSessionKey)
